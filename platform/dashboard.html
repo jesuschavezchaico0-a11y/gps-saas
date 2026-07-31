@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard GPS - Monitoreo en Tiempo Real</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <!-- Leaflet CSS para mapas -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" role="navigation" aria-label="Menú principal">
+            <div class="sidebar-header">
+                <span class="logo-icon" aria-hidden="true">🛰️</span>
+                <h2>GPS SaaS</h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-view="dashboard" aria-current="page">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span>Dashboard</span>
+                </button>
+                
+                <button class="nav-btn" data-view="map" aria-label="Ver mapa completo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                        <line x1="8" y1="2" x2="8" y2="18"></line>
+                        <line x1="16" y1="6" x2="16" y2="22"></line>
+                    </svg>
+                    <span>Mapa</span>
+                </button>
+                
+                <button class="nav-btn" data-view="vehicles" aria-label="Gestionar vehículos">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
+                        <circle cx="6.5" cy="16.5" r="2.5"></circle>
+                        <circle cx="16.5" cy="16.5" r="2.5"></circle>
+                    </svg>
+                    <span>Vehículos</span>
+                </button>
+                
+                <button class="nav-btn" data-view="geofences" aria-label="Configurar cercos geográficos">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <line x1="12" y1="2" x2="12" y2="4"></line>
+                        <line x1="12" y1="20" x2="12" y2="22"></line>
+                        <line x1="2" y1="12" x2="4" y2="12"></line>
+                        <line x1="20" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                    <span>Cercos</span>
+                </button>
+                
+                <button class="nav-btn" data-view="reports" aria-label="Generar reportes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Reportes</span>
+                </button>
+                
+                <button class="nav-btn" data-view="history" aria-label="Reconstrucción de viajes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>Historial</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="logout-btn" aria-label="Cerrar sesión">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" role="main">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menu-toggle" aria-label="Alternar menú" aria-expanded="false">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 id="page-title">Dashboard</h1>
+                </div>
+                
+                <div class="header-right">
+                    <div class="user-info">
+                        <span class="user-avatar" aria-hidden="true">👤</span>
+                        <span id="username-display">Admin</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="view-section active">
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
+                                <circle cx="6.5" cy="16.5" r="2.5"></circle>
+                                <circle cx="16.5" cy="16.5" r="2.5"></circle>
+                            </svg>
+                        </div>
+                        <div class="kpi-content">
+                            <h3>Total Vehículos</h3>
+                            <p class="kpi-value" id="total-vehicles">24</p>
+                            <p class="kpi-change positive">+2 esta semana</p>
+                        </div>
+                    </div>
+                    
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="kpi-content">
+                            <h3>En Movimiento</h3>
+                            <p class="kpi-value" id="moving-vehicles">18</p>
+                            <p class="kpi-change positive">75% activos</p>
+                        </div>
+                    </div>
+                    
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                        </div>
+                        <div class="kpi-content">
+                            <h3>Alertas Activas</h3>
+                            <p class="kpi-value" id="active-alerts">5</p>
+                            <p class="kpi-change negative">+3 hoy</p>
+                        </div>
+                    </div>
+                    
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                        </div>
+                        <div class="kpi-content">
+                            <h3>Excesos Velocidad</h3>
+                            <p class="kpi-value" id="speed-violations">12</p>
+                            <p class="kpi-change negative">Esta semana</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="card-header">
+                            <h3>Horas Trabajadas por Vehículo</h3>
+                            <button class="filter-btn" aria-label="Filtrar datos">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                        <canvas id="hoursChart" role="img" aria-label="Gráfico de horas trabajadas por vehículo"></canvas>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <div class="card-header">
+                            <h3>Distancia Recorrida (km)</h3>
+                            <select class="period-select" aria-label="Seleccionar período">
+                                <option value="today">Hoy</option>
+                                <option value="week" selected>Esta Semana</option>
+                                <option value="month">Este Mes</option>
+                            </select>
+                        </div>
+                        <canvas id="distanceChart" role="img" aria-label="Gráfico de distancia recorrida"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Alerts -->
+                <div class="alerts-section">
+                    <div class="card-header">
+                        <h3>Alertas Recientes</h3>
+                        <button class="view-all-btn">Ver Todas</button>
+                    </div>
+                    <div class="alerts-list" id="alerts-list" role="log" aria-live="polite">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map View -->
+            <div id="view-map" class="view-section">
+                <div class="map-container">
+                    <div id="map" role="application" aria-label="Mapa de seguimiento GPS"></div>
+                    
+                    <div class="map-controls">
+                        <button class="map-control-btn" id="locate-all" aria-label="Mostrar todos los vehículos">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <line x1="12" y1="2" x2="12" y2="22"></line>
+                            </svg>
+                        </button>
+                        <button class="map-control-btn" id="refresh-map" aria-label="Actualizar mapa">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="vehicle-list-panel">
+                    <div class="panel-header">
+                        <h3>Vehículos en Tiempo Real</h3>
+                        <input type="search" id="vehicle-search" placeholder="Buscar vehículo..." aria-label="Buscar vehículo">
+                    </div>
+                    <div class="vehicle-list" id="vehicle-list" role="list">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicles View -->
+            <div id="view-vehicles" class="view-section">
+                <div class="vehicles-header">
+                    <button class="btn-primary" id="add-vehicle-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Agregar Vehículo</span>
+                    </button>
+                </div>
+                
+                <div class="vehicles-grid" id="vehicles-grid">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Geofences View -->
+            <div id="view-geofences" class="view-section">
+                <div class="geofences-header">
+                    <button class="btn-primary" id="add-geofence-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                        <span>Crear Cerco</span>
+                    </button>
+                </div>
+                
+                <div class="geofences-grid" id="geofences-grid">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Reports View -->
+            <div id="view-reports" class="view-section">
+                <div class="reports-filters">
+                    <div class="filter-group">
+                        <label for="report-type">Tipo de Reporte</label>
+                        <select id="report-type">
+                            <option value="hours">Horas Trabajadas</option>
+                            <option value="speed">Excesos de Velocidad</option>
+                            <option value="distance">Distancia Recorrida</option>
+                            <option value="stops">Paradas y Detenciones</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="report-vehicle">Vehículo</label>
+                        <select id="report-vehicle">
+                            <option value="all">Todos</option>
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="report-start">Fecha Inicio</label>
+                        <input type="date" id="report-start">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="report-end">Fecha Fin</label>
+                        <input type="date" id="report-end">
+                    </div>
+                    
+                    <button class="btn-primary" id="generate-report-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        <span>Generar Reporte</span>
+                    </button>
+                </div>
+                
+                <div class="report-result" id="report-result">
+                    <div class="report-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        <p>Seleccione filtros y genere un reporte</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History/Reconstruction View -->
+            <div id="view-history" class="view-section">
+                <div class="history-filters">
+                    <div class="filter-group">
+                        <label for="history-vehicle">Vehículo</label>
+                        <select id="history-vehicle">
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="history-date">Fecha</label>
+                        <input type="date" id="history-date">
+                    </div>
+                    
+                    <button class="btn-primary" id="reconstruct-trip-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span>Reconstruir Viaje</span>
+                    </button>
+                </div>
+                
+                <div class="history-container">
+                    <div class="history-map">
+                        <div id="history-map" role="application" aria-label="Mapa de reconstrucción de viaje"></div>
+                    </div>
+                    
+                    <div class="history-timeline" id="history-timeline">
+                        <div class="timeline-placeholder">
+                            <p>Seleccione un vehículo y fecha para ver el historial</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para Cerco Geográfico -->
+    <div id="geofence-modal" class="modal" role="dialog" aria-labelledby="modal-title" aria-modal="true" hidden>
+        <div class="modal-overlay" tabindex="-1"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Configurar Cerco Geográfico</h2>
+                <button class="modal-close" id="modal-close" aria-label="Cerrar modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="geofence-form">
+                <div class="form-group">
+                    <label for="geofence-name">Nombre del Cerco</label>
+                    <input type="text" id="geofence-name" required placeholder="Ej: Zona Industrial Norte">
+                </div>
+                
+                <div class="form-group">
+                    <label for="geofence-description">Descripción</label>
+                    <textarea id="geofence-description" rows="3" placeholder="Describa el propósito del cerco..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="geofence-speed">Límite de Velocidad (km/h)</label>
+                    <input type="number" id="geofence-speed" min="1" max="200" required placeholder="Ej: 60">
+                    <small class="form-help">Velocidad máxima permitida dentro del cerco</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="geofence-type">Tipo de Cerco</label>
+                    <select id="geofence-type">
+                        <option value="circle">Circular</option>
+                        <option value="polygon">Polígono</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ubicación</label>
+                    <div class="location-inputs">
+                        <input type="number" id="geofence-lat" step="0.000001" placeholder="Latitud" required>
+                        <input type="number" id="geofence-lng" step="0.000001" placeholder="Longitud" required>
+                    </div>
+                    <button type="button" class="btn-secondary" id="select-on-map">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                            <line x1="8" y1="2" x2="8" y2="18"></line>
+                            <line x1="16" y1="6" x2="16" y2="22"></line>
+                        </svg>
+                        <span>Seleccionar en Mapa</span>
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="geofence-radius">Radio (metros)</label>
+                    <input type="number" id="geofence-radius" min="10" max="10000" placeholder="Ej: 500">
+                </div>
+            </form>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancel-geofence">Cancelar</button>
+                <button type="submit" form="geofence-form" class="btn-primary">Guardar Cerco</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- App JS -->
+    <script src="js/dashboard.js"></script>
+    
+    <!-- Google Analytics Placeholder -->
+    <!-- 
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script> 
+    -->
+</body>
+</html>
